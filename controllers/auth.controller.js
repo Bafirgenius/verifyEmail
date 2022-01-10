@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const { errorHandler } = require('../helpers/dbErrorHandling');
 //I will use for send email sendgrid you can use nodemailer
 const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.MAIL_KEY);
 exports.registerController = (req, res) => {
   const { name, email, password } = req.body;
 
@@ -37,7 +38,23 @@ exports.registerController = (req, res) => {
         email,
         password,
       },
-      process.env.JWT_ACCOUNT_ACTIVATION
+      process.env.JWT_ACCOUNT_ACTIVATION,
+      {
+        expiresIn: '15m',
+      }
     );
+    //Email data sending
+    const emailData = {
+      from: process.env.EMAIL_FROM,
+      to: to,
+      subject: 'Account activation link',
+      html: `
+      <h1>Please Click to link to activate</h1>
+      <p>${process.env.CLIENT_URL}/users/activate${token}</p>
+      <hr/>
+      <p>This email contain sensitive info</p>
+      <p>${process.env.CLIENT_URL}</p>
+      `,
+    };
   }
 };
