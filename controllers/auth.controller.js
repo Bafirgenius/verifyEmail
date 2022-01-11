@@ -1,15 +1,16 @@
 const User = require('../models/auth.model');
-const expressJwt = require('express-jwt');
-const _ = require('lodash');
-const { OAuth2Client } = require('google-auth-library');
-const fetch = require('node-fetch');
+// const expressJwt = require('express-jwt');
+// const _ = require('lodash');
+// const { OAuth2Client } = require('google-auth-library');
+// const fetch = require('node-fetch');
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 //Custom error handler to get useful error from database errors
 const { errorHandler } = require('../helpers/dbErrorHandling');
 //I will use for send email sendgrid you can use nodemailer
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.MAIL_KEY);
+// const sgMail = require('@sendgrid/mail');
+// sgMail.setApiKey(process.env.MAIL_KEY);
 exports.registerController = (req, res) => {
   const { name, email, password } = req.body;
 
@@ -44,17 +45,51 @@ exports.registerController = (req, res) => {
       }
     );
     //Email data sending
-    const emailData = {
+    // const emailData = {
+    //   from: process.env.EMAIL_FROM,
+    //   to: to,
+    //   subject: 'Account activation link',
+    //   html: html`
+    //     <h1>Please Click to link to activate</h1>
+    //     <p>${process.env.CLIENT_URL}/users/activate${token}</p>
+    //     <hr />
+    //     <p>This email contain sensitive info</p>
+    //     <p>${process.env.CLIENT_URL}</p>
+    //   `,
+    // };
+
+    var transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_FROM,
+        pass: process.env.MAIL_PASSWORD,
+      },
+    });
+
+    var mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: to,
-      subject: 'Account activation link',
+      to: process.env.EMAIL_TO,
+      subject: 'Sending Email using Node.js',
       html: `
-      <h1>Please Click to link to activate</h1>
-      <p>${process.env.CLIENT_URL}/users/activate${token}</p>
-      <hr/>
-      <p>This email contain sensitive info</p>
-      <p>${process.env.CLIENT_URL}</p>
+        <h1>Please Click to link to activate</h1>
+        <p>${process.env.CLIENT_URL}/users/activate${token}</p>
+        <hr />
+        <p>This email contain sensitive info</p>
+        <p>${process.env.CLIENT_URL}</p>
       `,
     };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        return res.status(400).json({
+          error: errorHandler(error),
+        });
+      } else {
+        console.log('Email sent: ' + info.response);
+        return res
+          .status(200)
+          .json({ message: `Email sent ${info.response}` });
+      }
+    });
   }
 };
